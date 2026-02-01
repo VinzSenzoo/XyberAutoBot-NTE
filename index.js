@@ -7,7 +7,9 @@ import readline from 'readline';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import ora from 'ora';
-import { ethers } from 'ethers';
+import { Keypair } from '@solana/web3.js';
+import bs58 from 'bs58';
+import nacl from 'tweetnacl';
 
 const logger = {
   info: (msg, options = {}) => {
@@ -226,8 +228,9 @@ function maskAddress(address) {
 
 function deriveWalletAddress(privateKey) {
   try {
-    const wallet = new ethers.Wallet(privateKey);
-    return wallet.address;
+    const secretKey = bs58.decode(privateKey);
+    const keypair = Keypair.fromSecretKey(secretKey);
+    return keypair.publicKey.toBase58();
   } catch (error) {
     logger.error(`Failed to derive address: ${error.message}`);
     return null;
@@ -235,7 +238,7 @@ function deriveWalletAddress(privateKey) {
 }
 
 async function performLogin(proxy, context, address, privateKey) {
-  const challengeUrl = `https://ai-auth-service.xyber.inc/auth/challenge?address=${address}`;
+  const challengeUrl = `https://ai-auth-service.xyber.inc/api/auth/challenge?address=${address}&network=solana`;
   const config = getAxiosConfig(proxy);
   const spinner = ora({ text: 'Fetching login challenge...', spinner: 'dots' }).start();
   try {
@@ -244,10 +247,13 @@ async function performLogin(proxy, context, address, privateKey) {
       spinner.succeed(chalk.bold.greenBright(' Challenge fetched successfully'));
       const challenge = challengeResponse.data.data.challenge;
       
-      const wallet = new ethers.Wallet(privateKey);
-      const signature = await wallet.signMessage(challenge);
+      const secretKey = bs58.decode(privateKey);
+      const keypair = Keypair.fromSecretKey(secretKey);
+      const message = new TextEncoder().encode(challenge);
+      const signatureBytes = nacl.sign.detached(message, keypair.secretKey);
+      const signature = bs58.encode(signatureBytes);
       
-      const verifyUrl = 'https://ai-auth-service.xyber.inc/auth/verify';
+      const verifyUrl = 'https://ai-auth-service.xyber.inc/api/auth/verify';
       const verifyPayload = { address, signature };
       const verifyResponse = await requestWithRetry('post', verifyUrl, verifyPayload, config, 3, 2000, context);
       
