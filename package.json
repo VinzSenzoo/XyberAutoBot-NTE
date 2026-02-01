@@ -1,7 +1,7 @@
 {
-  "name": "NT EXHAUST - BOT HOTSTUFF AUTO CHECK-IN & ClAIM FAUCET ",
+  "name": "NT EXHAUST - BOT Xyber AUTO DAILY SPIN  ",
   "version": "1.0.0",
-  "description": "BOT HOTSTUFF AUTO CHECK-IN & ClAIM FAUCET",
+  "description": "BOT Xyber AUTO DAILY SPIN",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -22,3 +22,4 @@
     "tweetnacl": "^1.0.3"
   }
 }
+
